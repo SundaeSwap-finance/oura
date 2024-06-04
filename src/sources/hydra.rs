@@ -32,11 +32,11 @@ impl gasket::framework::Worker<Stage> for Worker {
 
         let mut peer_session = UdpSocket::bind("127.0.0.1:5678");
 
-        if stage.breadcrumbs.is_empty() {
-            intersect_from_config(&mut peer_session, &stage.intersect).await?;
-        } else {
-            intersect_from_breadcrumbs(&mut peer_session, &stage.breadcrumbs).await?;
-        }
+        // if stage.breadcrumbs.is_empty() {
+        //     intersect_from_config(&mut peer_session, &stage.intersect).await?;
+        // } else {
+        //     intersect_from_breadcrumbs(&mut peer_session, &stage.breadcrumbs).await?;
+        // }
 
         let worker = Self { peer_session };
 
@@ -47,6 +47,8 @@ impl gasket::framework::Worker<Stage> for Worker {
         &mut self,
         _stage: &mut Stage,
     ) -> Result<WorkSchedule<NextResponse<BlockContent>>, WorkerError> {
+        //TODO: we don't need to schedule anything since we're just gonna get sent stuff over UDP
+        // unless we want to like buffer it or something
         let client = self.peer_session.chainsync();
 
         let next = match client.has_agency() {
@@ -68,7 +70,13 @@ impl gasket::framework::Worker<Stage> for Worker {
         unit: &NextResponse<BlockContent>,
         stage: &mut Stage,
     ) -> Result<(), WorkerError> {
-        self.process_next(stage, unit).await
+        let mut buf = [0; 1024*1024];
+        self.peer_session.recv_from(&mut buf).await?;
+        //parse as cbor. this will be a statechanged event. then match on SnapshotConfirmed -> snapshot -> utxo, turn that into a multierablock (singleera is more accurate)
+        // then output to stage like https://github.com/SundaeSwap-finance/oura/blob/d7838ea984e774399ab1790b97692847a6a7752e/src/sources/n2c.rs#L112
+        // 
+    
+        self.process_next(stage, todo!()).await
     }
 }
 

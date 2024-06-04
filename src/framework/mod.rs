@@ -101,6 +101,7 @@ pub struct Context {
     pub breadcrumbs: Breadcrumbs,
 }
 
+//TODO(Elaine): use this. prefer cbortx over genericjson so that filters have more information
 #[derive(Debug, Clone)]
 pub enum Record {
     CborBlock(Vec<u8>),
@@ -123,7 +124,7 @@ impl From<Record> for JsonValue {
         }
     }
 }
-
+//TODO(Elaine): if we still do rollbacks, use this
 #[derive(Debug, Clone)]
 pub enum ChainEvent {
     Apply(Point, Record),
