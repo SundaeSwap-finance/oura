@@ -15,6 +15,8 @@ pub mod u5c;
 #[cfg(feature = "aws")]
 pub mod s3;
 
+pub mod hydra;
+
 pub enum Bootstrapper {
     N2N(n2n::Stage),
 
@@ -26,6 +28,8 @@ pub enum Bootstrapper {
 
     #[cfg(feature = "aws")]
     S3(s3::Stage),
+
+    Hydra(hydra::Stage),
 }
 
 impl Bootstrapper {
@@ -41,6 +45,8 @@ impl Bootstrapper {
 
             #[cfg(feature = "aws")]
             Bootstrapper::S3(p) => &mut p.output,
+            //TODO: don't think we need an output port for Hydra, since we just get udp messages. check this, make an empty outputport if so
+            Bootstrapper::Hydra(_) => unimplemented!(),
         }
     }
 
@@ -56,6 +62,8 @@ impl Bootstrapper {
 
             #[cfg(feature = "aws")]
             Bootstrapper::S3(x) => gasket::runtime::spawn_stage(x, policy),
+
+            Bootstrapper::Hydra(x) => gasket::runtime::spawn_stage(x, policy),
         }
     }
 }
@@ -73,11 +81,15 @@ pub enum Config {
 
     #[cfg(feature = "aws")]
     S3(s3::Config),
+
+    Hydra(hydra::Config),
 }
 
 impl Config {
     pub fn bootstrapper(self, ctx: &Context) -> Result<Bootstrapper, Error> {
         match self {
+            Config::Hydra(c) => Ok(Bootstrapper::Hydra(c.bootstrapper(ctx)?)),
+
             Config::N2N(c) => Ok(Bootstrapper::N2N(c.bootstrapper(ctx)?)),
 
             #[cfg(target_family = "unix")]
