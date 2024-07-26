@@ -59,23 +59,13 @@ impl gasket::framework::Worker<Stage> for Worker {
         //TODO: we don't need to schedule anything since we're just gonna get sent stuff over UDP
         // if we want to buffer, here's where we'd do it
 
-        Ok(WorkSchedule::Idle)
-    }
-
-    async fn execute(
-        &mut self,
-        unit: &NextResponse<BlockContent>,
-        stage: &mut Stage,
-    ) -> Result<(), WorkerError> {
-        let mut buf = [0; 1024*1024];
-        self.session.udp_url.recv_from(&mut buf).await.map_err(|_| WorkerError::Recv)?;
         //parse as cbor. this will be a statechanged event. then match on SnapshotConfirmed -> snapshot -> utxo, turn that into a multierablock (singleera is more accurate)
         // then output to stage like https://github.com/SundaeSwap-finance/oura/blob/d7838ea984e774399ab1790b97692847a6a7752e/src/sources/n2c.rs#L112
-        
+
         // parse buf as cbor
         let mut decoder = Decoder::new(&buf);
         // i think transaction confirmed is the 10th (1 indexed) in the event enum. double check though
-        
+
         decoder.map().map_err(|_| WorkerError::Panic)?;
         if decoder.str().map_err(|_| WorkerError::Panic)? != "Snapshot" {
             return Err(WorkerError::Panic);
@@ -88,16 +78,22 @@ impl gasket::framework::Worker<Stage> for Worker {
         let snapshot = decoder.array().map_err(|_| WorkerError::Panic)?;
 
 
+        let val: Result<WorkSchedule<!>, _> = todo!();
+        Ok(WorkSchedule::Unit(val))
+    }
+
+    async fn execute(
+        &mut self,
+        unit: &NextResponse<BlockContent>,
+        stage: &mut Stage,
+    ) -> Result<(), WorkerError> {
+        let mut buf = [0; 1024*1024];
+        self.session.udp_url.recv_from(&mut buf).await.map_err(|_| WorkerError::Recv)?;
 
 
-
-    
         self.process_next(stage, todo!()).await
     }
 
-    // async fn shutdown(&mut self) -> Result<()> {
-    //     Ok(())
-    // }
 }
 
 impl Worker {
